@@ -9,7 +9,7 @@ final case class MultiNodeOldestAutoDownSpecConfig(failureDetectorPuppet: Boolea
   val nodeA = role("master")
   val nodeB = role("nodeB")
   val nodeC = role("nodeC")
-
+ // val nodeD = role("nodeD")
   commonConfig(ConfigFactory.parseString(
     """
       |akka.cluster.downing-provider-class = "tanukki.akka.cluster.autodown.OldestAutoDowning"

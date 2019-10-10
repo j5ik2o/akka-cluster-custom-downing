@@ -11,10 +11,11 @@ package tanukki.akka.cluster.autodown
 import akka.actor._
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
-import akka.cluster.{MemberStatus, Member, TestMember}
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.concurrent.duration._
+import akka.cluster.{Member, TestMember}
+import org.scalatest.Matchers
+
 import scala.collection.immutable
+import scala.concurrent.duration.{Duration, FiniteDuration, _}
 
 case class DownCalledBySecondaryOldest(address: Address)
 
@@ -55,7 +56,7 @@ object OldestAutoDownRolesSpec {
   }
 }
 
-class OldestAutoDownRolesSpec extends AkkaSpec(ActorSystem("OldestAutoDownRolesSpec")) {
+class OldestAutoDownRolesSpec extends AkkaSpec(ActorSystem("OldestAutoDownRolesSpec")) with Matchers{
   import OldestAutoDownRolesSpec._
 
   def autoDownActor(autoDownUnreachableAfter: FiniteDuration): ActorRef =
@@ -70,11 +71,30 @@ class OldestAutoDownRolesSpec extends AkkaSpec(ActorSystem("OldestAutoDownRolesS
   "OldestAutoDownRoles" must {
 
     "down unreachable when oldest" in {
+        val a = autoDownActor(Duration.Zero)
+        val second = initialMembersByAge.drop(1).head
+        a ! CurrentClusterState(members = initialMembersByAge)
+        a ! UnreachableMember(second)
+        expectMsg(DownCalled(second.address))
+    }
+
+    "2-down unreachable when oldest" in {
       val a = autoDownActor(Duration.Zero)
+      val b = autoDownActor(Duration.Zero)
       val second = initialMembersByAge.drop(1).head
+      val third = initialMembersByAge.drop(2).head
+
       a ! CurrentClusterState(members = initialMembersByAge)
+      b ! CurrentClusterState(members = initialMembersByAge)
       a ! UnreachableMember(second)
-      expectMsg(DownCalled(second.address))
+      b ! UnreachableMember(third)
+
+      expectMsgType[DownCalled] match {
+        case DownCalled(a) if a == second.address =>
+          expectMsgType[DownCalled] shouldBe DownCalled(third.address)
+        case DownCalled(a) if a == third.address =>
+          expectMsgType[DownCalled] shouldBe DownCalled(second.address)
+      }
     }
 
     "not down unreachable when not oldest" in {

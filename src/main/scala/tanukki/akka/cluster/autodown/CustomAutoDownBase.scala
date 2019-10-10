@@ -8,10 +8,11 @@
 
 package tanukki.akka.cluster.autodown
 
-import akka.actor.{Cancellable, Scheduler, Address, Actor}
+import akka.actor.{Actor, Address, Cancellable, Scheduler}
 import akka.cluster.ClusterEvent._
-import akka.cluster.MemberStatus.{Exiting, Down}
+import akka.cluster.MemberStatus.{Down, Exiting}
 import akka.cluster._
+
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 object CustomDowning {
@@ -64,12 +65,15 @@ abstract class CustomAutoDownBase(autoDownUnreachableAfter: FiniteDuration) exte
         } else {
           unstableUnreachable += member
         }
+        onUnreachableTimeout(member)
       }
 
     case _: ClusterDomainEvent =>
   }
 
-  def initialize(state: CurrentClusterState) = {}
+  def onUnreachableTimeout(member: Member): Unit = {}
+
+  def initialize(state: CurrentClusterState): Unit = {}
 
   def unreachableMember(m: Member): Unit =
     if (!skipMemberStatus(m.status) && !scheduledUnreachable.contains(m))

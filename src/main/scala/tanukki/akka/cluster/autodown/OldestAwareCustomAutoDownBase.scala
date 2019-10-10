@@ -58,7 +58,14 @@ abstract class OldestAwareCustomAutoDownBase(autoDownUnreachableAfter: FiniteDur
     membersByAge -= member
   }
 
-  def isAllIntermediateMemberRemoved = {
+  def isAllIntermediateMemberRemovedOnlyExiting: Boolean = {
+    val isUnsafe = membersByAge.exists { m =>
+      m.status == MemberStatus.Exiting
+    }
+    !isUnsafe
+  }
+
+  def isAllIntermediateMemberRemoved: Boolean = {
     val isUnsafe = membersByAge.exists { m =>
       m.status == MemberStatus.Down || m.status == MemberStatus.Exiting
     }
@@ -91,7 +98,7 @@ abstract class OldestAwareCustomAutoDownBase(autoDownUnreachableAfter: FiniteDur
     }
   }
 
-  def isSecondaryOldest(role: Option[String]) = {
+  def isSecondaryOldest(role: Option[String]): Boolean = {
     val tm = targetMembers(role)
     if (tm.size >= 2) {
       tm.slice(1, 2).head.address == selfAddress
